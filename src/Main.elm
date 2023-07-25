@@ -2,72 +2,32 @@ module Main exposing (..)
 
 import Browser
 import Dict exposing (Dict)
-import Html
-import Html.Attributes
 import View exposing (Entity, Msg(..), Tag)
 
 
-type alias Rel =
-    { tags : Dict Entity (List Tag)
-    , ents : Dict Tag (List Entity)
-    }
-
-
 type View
-    = Main
+    = Main View.Pending
     | Tag Tag
     | Entity Entity -- | Graph
 
 
 type alias Model =
-    { rel : Rel
+    { rel : View.Rel
     , view : View
     }
-
-
-viewMain : Rel -> Html.Html Msg
-viewMain { tags } =
-    View.body
-        [ View.search "search..."
-        , Html.div [] <| List.map (\( ent, ts ) -> View.container ent ts) <| Dict.toList tags
-        , View.addEntity
-        ]
-
-
-viewTag : Tag -> Rel -> Html.Html Msg
-viewTag tag { ents } =
-    View.body
-        [ View.backToMain
-        , View.tag tag
-        , Dict.get tag ents
-            |> Maybe.withDefault []
-            |> List.map View.entity
-            |> Html.div [ Html.Attributes.style "display" "flex" ]
-        ]
-
-
-viewEntity : Entity -> Rel -> Html.Html Msg
-viewEntity ent { tags } =
-    View.body
-        [ View.backToMain
-        , View.entity ent
-        , Dict.get ent tags
-            |> Maybe.withDefault []
-            |> List.map View.tag
-            |> Html.div [ Html.Attributes.style "display" "flex" ]
-        ]
 
 
 
 -- main : Program () Model String
 
 
-testRel : Rel
+testRel : View.Rel
 testRel =
     { tags =
         Dict.fromList
             [ ( "ent1", [ "tag1", "tag2", "tag3" ] )
             , ( "ent2", [ "tag1", "tag4", "tag2" ] )
+            , ( "ent3", [] )
             ]
     , ents =
         Dict.fromList
@@ -82,20 +42,51 @@ testRel =
 main : Program () Model Msg
 main =
     Browser.sandbox
-        { init = { rel = testRel, view = Main }
+        { init = { rel = testRel, view = Main View.NoChange }
         , view =
             \{ rel, view } ->
                 case view of
-                    Main ->
-                        viewMain rel
+                    Main pending ->
+                        View.viewMainView rel pending
 
                     Tag tag ->
-                        viewTag tag rel
+                        View.viewTagView tag rel
 
                     Entity entity ->
-                        viewEntity entity rel
+                        View.viewEntityView entity rel
         , update = update
         }
+
+
+appendTo : ( comparable, val ) -> Dict comparable (List val) -> Dict comparable (List val)
+appendTo ( key, val ) =
+    Dict.update key (Maybe.withDefault [] >> (::) val >> Just)
+
+
+addToRel : ( Entity, Tag ) -> View.Rel -> View.Rel
+addToRel ( ent, tag ) rel =
+    { rel | ents = appendTo ( tag, ent ) rel.ents, tags = appendTo ( ent, tag ) rel.tags }
+
+
+addEntityToRel : Entity -> View.Rel -> View.Rel
+addEntityToRel ent rel =
+    { rel | tags = Dict.insert ent [] rel.tags }
+
+
+removeTag : Tag -> View.Rel -> View.Rel
+removeTag tag rel =
+    { rel
+        | tags = Dict.map (\_ l -> List.filter ((/=) tag) l) rel.tags
+        , ents = Dict.update tag (\_ -> Nothing) rel.ents
+    }
+
+
+removeEntity : Entity -> View.Rel -> View.Rel
+removeEntity ent rel =
+    { rel
+        | ents = Dict.map (\_ l -> List.filter ((/=) ent) l) rel.ents
+        , tags = Dict.update ent (\_ -> Nothing) rel.tags
+    }
 
 
 update : Msg -> Model -> Model
@@ -108,10 +99,25 @@ update msg model =
             { model | view = Tag tag }
 
         BackToMain ->
-            { model | view = Main }
+            { model | view = Main View.NoChange }
 
-        AddTag ent ->
-            model
+        InputTag ent s ->
+            { model | view = Main <| View.PendingTag ent s }
 
-        AddEntity ->
+        InputEntity s ->
+            { model | view = Main <| View.PendingEntity s }
+
+        AddTag ent tag ->
+            { model | view = Main View.NoChange, rel = addToRel ( ent, tag ) model.rel }
+
+        AddEntity ent ->
+            { model | view = Main View.NoChange, rel = addEntityToRel ent model.rel }
+
+        DeleteTag tag ->
+            { model | view = Main View.NoChange, rel = removeTag tag model.rel }
+
+        DeleteEntity ent ->
+            { model | view = Main View.NoChange, rel = removeEntity ent model.rel }
+
+        NoAction ->
             model
