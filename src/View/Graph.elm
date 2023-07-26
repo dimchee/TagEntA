@@ -3,7 +3,7 @@ module View.Graph exposing (..)
 import Html exposing (Html)
 import Html.Attributes
 import Svg
-import Svg.Attributes exposing (stroke, x1, x2, y1, y2)
+import Svg.Attributes exposing (d, fill, stroke, x1, x2, y1, y2)
 import TagEnt exposing (TagEnt)
 import Types exposing (Msg)
 import View.Components
@@ -30,7 +30,24 @@ type alias Index =
 
 line : Index -> Index -> Svg.Svg msg
 line from to =
-    Svg.line [ x1 "90", indexToY from |> y1, x2 "310", indexToY to |> y2, stroke "red" ] []
+    Svg.line [ x1 "90", indexToY from |> y1, x2 "calc(50% - 90px)", indexToY to |> y2, stroke "red" ] []
+
+
+lineSmooth : Index -> Index -> Svg.Svg msg
+lineSmooth from to =
+    let
+        yy1 =
+            indexToY from
+
+        yy2 =
+            indexToY to
+    in
+    Svg.path
+        [ d <| "M 90 " ++ yy1 ++ " C 390 " ++ yy1 ++ ", 390 " ++ yy2 ++ ", 690 " ++ yy2
+        , stroke "red"
+        , fill "transparent"
+        ]
+        []
 
 
 view : TagEnt -> Html Msg
