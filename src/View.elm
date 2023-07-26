@@ -151,7 +151,7 @@ onEnter : Msg -> Html.Attribute Msg
 onEnter msg =
     let
         isEnter code =
-            if Debug.log "code: " code == 13 then
+            if code == 13 then
                 Decode.succeed msg
 
             else
