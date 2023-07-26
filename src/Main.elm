@@ -2,11 +2,13 @@ module Main exposing (..)
 
 import Browser
 import TagEnt exposing (..)
-import View exposing (Msg(..))
+import Types exposing (Msg(..))
+import View.Main
+import View.TagEnt
 
 
 type View
-    = Main View.Pending
+    = Main View.Main.Pending
     | Tag Tag
     | Entity Entity -- | Graph
 
@@ -20,18 +22,18 @@ type alias Model =
 main : Program () Model Msg
 main =
     Browser.sandbox
-        { init = { rel = TagEnt.example, view = Main View.NoChange }
+        { init = { rel = TagEnt.example, view = Main View.Main.NoChange }
         , view =
             \{ rel, view } ->
                 case view of
                     Main pending ->
-                        View.viewMainView rel pending
+                        View.Main.view rel pending
 
                     Tag tag ->
-                        View.viewTagView tag rel
+                        View.TagEnt.tag tag rel
 
                     Entity entity ->
-                        View.viewEntityView entity rel
+                        View.TagEnt.entity entity rel
         , update = update
         }
 
@@ -55,25 +57,25 @@ update msg model =
             { model | view = Tag tag }
 
         BackToMain ->
-            { model | view = Main View.NoChange }
+            { model | view = Main View.Main.NoChange }
 
         InputTag ent s ->
-            { model | view = Main <| View.PendingTag ent <| validate s }
+            { model | view = Main <| View.Main.PendingTag ent <| validate s }
 
         InputEntity s ->
-            { model | view = Main <| View.PendingEntity <| validate s }
+            { model | view = Main <| View.Main.PendingEntity <| validate s }
 
         AddTag ent tag ->
-            { model | view = Main View.NoChange, rel = addEdge ( ent, tag ) model.rel }
+            { model | rel = addEdge ( ent, tag ) model.rel } |> update BackToMain
 
         AddEntity ent ->
-            { model | view = Main View.NoChange, rel = addEntity ent model.rel }
+            { model | rel = addEntity ent model.rel } |> update BackToMain
 
         DeleteTag tag ->
-            { model | view = Main View.NoChange, rel = removeTag tag model.rel }
+            { model | rel = removeTag tag model.rel } |> update BackToMain
 
         DeleteEntity ent ->
-            { model | view = Main View.NoChange, rel = removeEntity ent model.rel }
+            { model | rel = removeEntity ent model.rel } |> update BackToMain
 
         NoAction ->
             model
