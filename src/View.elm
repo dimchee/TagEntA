@@ -1,13 +1,14 @@
 module View exposing (..)
 
-import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
+import TagEnt exposing (Entity, Tag, TagEnt)
 
 
 
--- TODO add submit on Enter key
+-- TODO On small width background not working on scroll right
 
 
 font_size : String
@@ -15,24 +16,10 @@ font_size =
     "1.5rem"
 
 
-type alias Rel =
-    { tags : Dict Entity (List Tag)
-    , ents : Dict Tag (List Entity)
-    }
-
-
 type Pending
     = PendingTag Entity String
     | PendingEntity String
     | NoChange
-
-
-type alias Entity =
-    String
-
-
-type alias Tag =
-    String
 
 
 type Msg
@@ -66,7 +53,7 @@ viewTag text =
         [ marginated text ]
 
 
-viewEntity : String -> Html Msg
+viewEntity : Entity -> Html Msg
 viewEntity text =
     Html.div
         [ Html.Attributes.style "display" "inline-block"
@@ -100,6 +87,7 @@ container : Pending -> Entity -> List Tag -> Html Msg
 container pending ent tags =
     Html.div
         [ Html.Attributes.style "display" "flex"
+        , Html.Attributes.style "min-width" "40rem"
         , Html.Attributes.style "align-items" "flex-start"
         , Html.Attributes.style "justify-content" "space-between"
         , Html.Attributes.style "border-radius" "0.5em"
@@ -144,7 +132,7 @@ add val submit onChange =
             ]
             [ Html.input
                 [ Html.Events.onInput onChange
-                , Html.Events.onSubmit submit
+                , onEnter submit
                 , Html.Attributes.value val
                 , Html.Attributes.placeholder "new..."
                 , Html.Attributes.style "background-color" "#0000"
@@ -157,6 +145,19 @@ add val submit onChange =
                 []
             ]
         ]
+
+
+onEnter : Msg -> Html.Attribute Msg
+onEnter msg =
+    let
+        isEnter code =
+            if Debug.log "code: " code == 13 then
+                Decode.succeed msg
+
+            else
+                Decode.fail "not ENTER"
+    in
+    Html.Events.on "keydown" (Decode.andThen isEnter Html.Events.keyCode)
 
 
 newTag : Pending -> Entity -> Html Msg
@@ -185,18 +186,16 @@ newEntity pending =
 
 body : List (Html msg) -> Html msg
 body =
-    Html.div [ Html.Attributes.style "margin" "10%" ]
-        >> List.singleton
-        >> Html.div
-            [ Html.Attributes.style "background-color" "#111"
-            , Html.Attributes.style "color" "white"
-            , Html.Attributes.style "margin" "0"
-            , Html.Attributes.style "position" "fixed"
-            , Html.Attributes.style "min-height" "100vh"
-            , Html.Attributes.style "width" "100vw"
-            , Html.Attributes.style "font-size" font_size
-            , Html.Attributes.style "user-select" "none"
-            ]
+    Html.div
+        [ Html.Attributes.style "display" "flex"
+        , Html.Attributes.style "flex-direction" "column"
+        , Html.Attributes.style "justify-content" "flex-start"
+        , Html.Attributes.style "min-height" "100vh"
+        , Html.Attributes.style "background-color" "#111"
+        , Html.Attributes.style "color" "white"
+        , Html.Attributes.style "font-size" font_size
+        , Html.Attributes.style "user-select" "none"
+        ]
 
 
 backToMain : Html.Html Msg
@@ -219,17 +218,17 @@ backToMain =
         ]
 
 
-viewMainView : Rel -> Pending -> Html.Html Msg
-viewMainView { tags } pending =
+viewMainView : TagEnt -> Pending -> Html.Html Msg
+viewMainView tagEnt pending =
     body
         [ search "search..."
-        , Html.div [] <| List.map (\( ent, ts ) -> container pending ent ts) <| Dict.toList tags
+        , Html.div [] <| List.map (\( ent, ts ) -> container pending ent ts) <| TagEnt.asTree tagEnt
         , newEntity pending
         ]
 
 
-viewTagView : Tag -> Rel -> Html.Html Msg
-viewTagView tag { ents } =
+viewTagView : Tag -> TagEnt -> Html.Html Msg
+viewTagView tag tagEnt =
     body
         [ backToMain
         , Html.div
@@ -242,15 +241,14 @@ viewTagView tag { ents } =
                 ]
                 [ Html.text "␡" ]
             ]
-        , Dict.get tag ents
-            |> Maybe.withDefault []
+        , TagEnt.tagEntities tag tagEnt
             |> List.map viewEntity
             |> Html.div [ Html.Attributes.style "display" "flex" ]
         ]
 
 
-viewEntityView : Entity -> Rel -> Html.Html Msg
-viewEntityView ent { tags } =
+viewEntityView : Entity -> TagEnt -> Html.Html Msg
+viewEntityView ent tagEnt =
     body
         [ backToMain
         , Html.div
@@ -263,8 +261,7 @@ viewEntityView ent { tags } =
                 ]
                 [ Html.text "␡" ]
             ]
-        , Dict.get ent tags
-            |> Maybe.withDefault []
+        , TagEnt.entityTags ent tagEnt
             |> List.map viewTag
             |> Html.div [ Html.Attributes.style "display" "flex" ]
         ]
