@@ -3,6 +3,7 @@ module Main exposing (..)
 import Browser
 import TagEnt exposing (..)
 import Types exposing (Msg(..))
+import View.Graph
 import View.Main
 import View.TagEnt
 
@@ -10,11 +11,12 @@ import View.TagEnt
 type View
     = Main View.Main.Pending
     | Tag Tag
-    | Entity Entity -- | Graph
+    | Entity Entity
+    | Graph
 
 
 type alias Model =
-    { rel : TagEnt
+    { tagEnt : TagEnt
     , view : View
     }
 
@@ -22,18 +24,21 @@ type alias Model =
 main : Program () Model Msg
 main =
     Browser.sandbox
-        { init = { rel = TagEnt.example, view = Main View.Main.NoChange }
+        { init = { tagEnt = TagEnt.example, view = Graph } --Main View.Main.NoChange }
         , view =
-            \{ rel, view } ->
+            \{ tagEnt, view } ->
                 case view of
                     Main pending ->
-                        View.Main.view rel pending
+                        View.Main.view tagEnt pending
 
                     Tag tag ->
-                        View.TagEnt.tag tag rel
+                        View.TagEnt.tag tag tagEnt
 
                     Entity entity ->
-                        View.TagEnt.entity entity rel
+                        View.TagEnt.entity entity tagEnt
+
+                    Graph ->
+                        View.Graph.view tagEnt
         , update = update
         }
 
@@ -56,7 +61,10 @@ update msg model =
         SelectedTag tag ->
             { model | view = Tag tag }
 
-        BackToMain ->
+        GoToGraph ->
+            { model | view = Graph }
+
+        GoToMain ->
             { model | view = Main View.Main.NoChange }
 
         InputTag ent s ->
@@ -66,16 +74,16 @@ update msg model =
             { model | view = Main <| View.Main.PendingEntity <| validate s }
 
         AddTag ent tag ->
-            { model | rel = addEdge ( ent, tag ) model.rel } |> update BackToMain
+            { model | tagEnt = addEdge ( ent, tag ) model.tagEnt } |> update GoToMain
 
         AddEntity ent ->
-            { model | rel = addEntity ent model.rel } |> update BackToMain
+            { model | tagEnt = addEntity ent model.tagEnt } |> update GoToMain
 
         DeleteTag tag ->
-            { model | rel = removeTag tag model.rel } |> update BackToMain
+            { model | tagEnt = removeTag tag model.tagEnt } |> update GoToMain
 
         DeleteEntity ent ->
-            { model | rel = removeEntity ent model.rel } |> update BackToMain
+            { model | tagEnt = removeEntity ent model.tagEnt } |> update GoToMain
 
         NoAction ->
             model

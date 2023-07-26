@@ -12,5 +12,6 @@ type Msg
     | InputEntity String
     | DeleteTag Tag
     | DeleteEntity Entity
-    | BackToMain
+    | GoToMain
+    | GoToGraph
     | NoAction

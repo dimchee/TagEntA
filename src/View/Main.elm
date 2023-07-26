@@ -33,14 +33,8 @@ add val submit onChange =
     Html.div
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "align-items" "center"
-        , Html.Attributes.style "color" "#888"
         ]
-        [ Html.div
-            [ Html.Attributes.style "font-size" "3rem"
-            , Html.Attributes.style "margin" "5px"
-            , Html.Events.onClick submit
-            ]
-            [ Html.text "+" ]
+        [ View.Components.symbolButton "+" submit
         , Html.input
             [ Html.Events.onInput onChange
             , onEnter submit
@@ -103,7 +97,7 @@ container pending ent tags =
     Html.div
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "min-width" "40rem"
-        , Html.Attributes.style "align-items" "flex-start"
+        , Html.Attributes.style "align-items" "center"
         , Html.Attributes.style "justify-content" "space-between"
         , Html.Attributes.style "border-radius" "0.5em"
         , Html.Attributes.style "outline" "2px solid white"
@@ -132,4 +126,5 @@ view tagEnt pending =
         [ search "search..."
         , Html.div [] <| List.map (\( ent, ts ) -> container pending ent ts) <| TagEnt.asTree tagEnt
         , newEntity pending
+        , View.Components.symbolButton "⤬" GoToGraph
         ]

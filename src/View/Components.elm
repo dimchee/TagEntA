@@ -17,6 +17,17 @@ marginated text =
     Html.div [ Html.Attributes.style "margin" "10px" ] [ Html.text text ]
 
 
+symbolButton : String -> msg -> Html msg
+symbolButton symb msg =
+    Html.div
+        [ Html.Attributes.style "font-size" "3rem"
+        , Html.Attributes.style "margin" "10px"
+        , Html.Attributes.style "color" "#888"
+        , Html.Events.onClick msg
+        ]
+        [ Html.text symb ]
+
+
 tag : Tag -> Html Msg
 tag text =
     Html.div
@@ -54,4 +65,28 @@ body =
         , Html.Attributes.style "color" "white"
         , Html.Attributes.style "font-size" font_size
         , Html.Attributes.style "user-select" "none"
+        ]
+
+
+goToMain : Html Msg
+goToMain =
+    Html.div
+        [ Html.Attributes.style "display" "flex"
+        , Html.Attributes.style "align-items" "center"
+        , Html.Attributes.style "color" "#888"
+        ]
+        [ symbolButton "⌂" GoToMain
+        , marginated "Home"
+        ]
+
+
+goToGraph : Html Msg
+goToGraph =
+    Html.div
+        [ Html.Attributes.style "display" "flex"
+        , Html.Attributes.style "align-items" "center"
+        , Html.Attributes.style "color" "#888"
+        ]
+        [ symbolButton "⤬" GoToGraph
+        , marginated "Graph"
         ]
