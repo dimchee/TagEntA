@@ -16,6 +16,10 @@ type alias Id =
     String
 
 
+type alias Query =
+    Maybe String
+
+
 type Msg
     = SelectedEntity Entity
     | SelectedTag Tag
@@ -29,4 +33,6 @@ type Msg
     | DeleteEntity Entity
     | GoToMain
     | GoToGraph
+    | ChangeQuery String
+    | Search String
     | NoAction

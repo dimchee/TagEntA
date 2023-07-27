@@ -14,10 +14,15 @@ import View.TagEnt
 
 
 type View
-    = Main View.Main.Pending
+    = Main Query View.Main.Pending
     | Tag Tag
     | Entity Entity
     | Graph (Maybe (Dict Id LR))
+
+
+mainDefault : View
+mainDefault =
+    Main Nothing View.Main.PendingNothing
 
 
 type alias Model =
@@ -46,15 +51,16 @@ main =
     Browser.element
         { init =
             \_ ->
-                update GoToGraph <|
-                    { tagEnt = TagEnt.example
-                    , view = Main View.Main.NoChange
-                    }
+                { tagEnt = TagEnt.example
+                , view = mainDefault
+                }
+                    -- |> update GoToGraph
+                    |> noCmd
         , view =
             \{ tagEnt, view } ->
                 case view of
-                    Main pending ->
-                        View.Main.view tagEnt pending
+                    Main query pending ->
+                        View.Main.view tagEnt query pending
 
                     Tag tag ->
                         View.TagEnt.tag tag tagEnt
@@ -83,6 +89,16 @@ noCmd x =
     ( x, Cmd.none )
 
 
+getMainQ : Model -> View.Main.Pending -> View
+getMainQ { view } =
+    case view of
+        Main q _ ->
+            Main q
+
+        _ ->
+            Main Nothing
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -107,13 +123,13 @@ update msg model =
             { model | view = Graph Nothing } |> update GetLRs
 
         GoToMain ->
-            { model | view = Main View.Main.NoChange } |> noCmd
+            { model | view = mainDefault } |> noCmd
 
         InputTag ent s ->
-            { model | view = Main <| View.Main.PendingTag ent <| validate s } |> noCmd
+            { model | view = getMainQ model <| View.Main.PendingTag ent <| validate s } |> noCmd
 
         InputEntity s ->
-            { model | view = Main <| View.Main.PendingEntity <| validate s } |> noCmd
+            { model | view = getMainQ model <| View.Main.PendingEntity <| validate s } |> noCmd
 
         AddTag ent tag ->
             { model | tagEnt = addEdge ( ent, tag ) model.tagEnt } |> update GoToMain
@@ -129,6 +145,12 @@ update msg model =
 
         GotLRs lrs ->
             { model | view = Graph lrs } |> noCmd
+
+        ChangeQuery query ->
+            { model | view = getMainQ model <| View.Main.PendingSearch query } |> noCmd
+
+        Search query ->
+            { model | view = Main (Just query) View.Main.PendingNothing } |> noCmd
 
         NoAction ->
             model |> noCmd

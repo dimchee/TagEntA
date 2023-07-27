@@ -12,7 +12,8 @@ import View.Components
 type Pending
     = PendingTag Entity String
     | PendingEntity String
-    | NoChange
+    | PendingSearch String
+    | PendingNothing
 
 
 onEnter : Msg -> Html.Attribute Msg
@@ -51,6 +52,51 @@ add val submit onChange =
         ]
 
 
+searchHelper : String -> Html Msg
+searchHelper query =
+    Html.div
+        [ Html.Attributes.style "display" "flex"
+        , Html.Attributes.style "justify-content" "center"
+        ]
+        [ Html.div
+            [ Html.Attributes.style "display" "flex"
+            , Html.Attributes.style "width" "60%"
+            , Html.Attributes.style "border-radius" "0.5em"
+            , Html.Attributes.style "outline" "2px dashed white"
+            , Html.Attributes.style "margin" "10px"
+            , Html.Attributes.style "color" "#888"
+            ]
+            [ Html.div
+                [ Html.Attributes.style "margin" "10px"
+                , Html.Events.onClick <| Search query
+                ]
+                [ Html.text "🔍" ]
+            , Html.input
+                [ Html.Events.onInput ChangeQuery
+                , onEnter <| Search query
+                , Html.Attributes.value query
+                , Html.Attributes.placeholder "search..."
+                , Html.Attributes.style "background-color" "#0000"
+                , Html.Attributes.style "border" "none"
+                , Html.Attributes.style "font-size" View.Components.font_size
+                , Html.Attributes.style "color" "white"
+                , Html.Attributes.style "outline" "none"
+                ]
+                []
+            ]
+        ]
+
+
+search : Pending -> Html Msg
+search pending =
+    case pending of
+        PendingSearch query ->
+            searchHelper query
+
+        _ ->
+            searchHelper ""
+
+
 newTag : Pending -> Entity -> Html Msg
 newTag pending ent =
     case pending of
@@ -73,23 +119,6 @@ newEntity pending =
 
         _ ->
             add "" NoAction InputEntity
-
-
-search : String -> Html msg
-search text =
-    Html.div
-        [ Html.Attributes.style "display" "flex"
-        , Html.Attributes.style "justify-content" "center"
-        ]
-        [ Html.div
-            [ Html.Attributes.style "width" "60%"
-            , Html.Attributes.style "border-radius" "0.5em"
-            , Html.Attributes.style "outline" "2px dashed white"
-            , Html.Attributes.style "margin" "10px"
-            , Html.Attributes.style "color" "#888"
-            ]
-            [ View.Components.marginated <| "🔍 " ++ text ]
-        ]
 
 
 container : Pending -> Entity -> List Tag -> Html Msg
@@ -120,11 +149,14 @@ container pending ent tags =
         ]
 
 
-view : TagEnt -> Pending -> Html Msg
-view tagEnt pending =
+view : TagEnt -> Query -> Pending -> Html Msg
+view tagEnt query pending =
     View.Components.body
-        [ search "search..."
-        , Html.div [] <| List.map (\( ent, ts ) -> container pending ent ts) <| TagEnt.asTree tagEnt
+        [ search pending
+        , TagEnt.asTree tagEnt
+            |> List.filter (\( ent, _ ) -> String.contains (Maybe.withDefault "" query) ent)
+            |> List.map (\( ent, ts ) -> container pending ent ts)
+            |> Html.div []
         , newEntity pending
         , View.Components.symbolButton "⤬" GoToGraph
         ]
