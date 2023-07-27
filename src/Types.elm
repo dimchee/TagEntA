@@ -35,16 +35,15 @@ type Msg
     | GoToGraph
     | ChangeQuery String
     | Search String
-    | ContinuousSearch Bool
+    | Focus Id
     | NoAction
 
 
 type Pending
     = PendingTag Entity String
     | PendingEntity String
-    | PendingSearch String
     | PendingNothing
 
 
 type alias MainArgs =
-    { continuousSearch : Bool, query : Query, pending : Pending }
+    { query : Query, pending : Pending }

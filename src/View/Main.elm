@@ -22,8 +22,8 @@ onEnter msg =
     Html.Events.on "keydown" (Decode.andThen isEnter Html.Events.keyCode)
 
 
-add : String -> Maybe Id -> Msg -> (String -> Msg) -> Html.Html Msg
-add val sugestions submit onChange =
+add : String -> Id -> Msg -> (String -> Msg) -> Html.Html Msg
+add val id submit onChange =
     Html.div
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "align-items" "center"
@@ -40,14 +40,16 @@ add val sugestions submit onChange =
             , Html.Attributes.style "color" "white"
             , Html.Attributes.style "outline" "none"
             , Html.Attributes.style "width" "10rem"
-            , sugestions |> Maybe.withDefault "" |> Html.Attributes.list
+            , Html.Attributes.id id
+
+            -- , sugestions |> Maybe.withDefault "" |> Html.Attributes.list
             ]
             []
         ]
 
 
-searchHelper : Bool -> String -> Html Msg
-searchHelper cSearch query =
+searchHelper : String -> Html Msg
+searchHelper query =
     Html.div
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "justify-content" "center"
@@ -77,59 +79,43 @@ searchHelper cSearch query =
                 , Html.Attributes.style "color" "white"
                 , Html.Attributes.style "outline" "none"
                 , Html.Attributes.style "width" "100%"
+                , Html.Attributes.id "search"
 
                 -- , Html.Attributes.type_ "search"
                 -- , Html.Attributes.list "search_sugestions"
                 ]
                 []
             ]
-        , Html.input
-            [ Html.Attributes.type_ "checkbox"
-            , Html.Attributes.style "height" "20px"
-            , Html.Attributes.style "width" "20px"
-            , Html.Events.onCheck ContinuousSearch
-            , Html.Attributes.checked cSearch
-            ]
-            []
-        , Html.label
-            []
-            [ Html.text "Continuous Search"
-            ]
         ]
 
 
-search : Bool -> Pending -> Html Msg
-search cSearch pending =
-    case pending of
-        PendingSearch query ->
-            searchHelper cSearch query
-
-        _ ->
-            searchHelper cSearch ""
+search : Query -> Html Msg
+search query =
+    searchHelper <| Maybe.withDefault "" query
 
 
-newTag : Pending -> Entity -> Html Msg
-newTag pending ent =
+newTag : Id -> Pending -> Entity -> Html Msg
+newTag id pending ent =
     case pending of
         PendingTag ent2 tag ->
             if ent == ent2 then
-                add tag (Just "sugestions_tag") (AddTag ent tag) (InputTag ent)
+                add tag id (AddTag ent tag) (InputTag ent)
 
             else
-                add "" (Just "sugestions_tag") NoAction (InputTag ent)
+                add "" id NoAction (InputTag ent)
 
         _ ->
-            add "" (Just "sugestions_tag") NoAction (InputTag ent)
+            add "" id NoAction (InputTag ent)
 
 
-newEntity : Pending -> Html Msg
-newEntity pending =
+newEntity : Id -> Pending -> Html Msg
+newEntity id pending =
     case pending of
         PendingEntity ent ->
-            add ent Nothing (AddEntity ent) InputEntity
+            add ent id (AddEntity ent) InputEntity
 
         _ ->
-            add "" Nothing NoAction InputEntity
+            add "" id NoAction InputEntity
 
 
 container : Pending -> Entity -> List Tag -> Html Msg
@@ -142,6 +128,7 @@ container pending ent tags =
         , Html.Attributes.style "border-radius" "0.5em"
         , Html.Attributes.style "outline" "2px solid white"
         , Html.Attributes.style "margin" "10px"
+        , Html.Events.onClick <| Focus <| "new_tag_" ++ ent
         ]
         [ Html.div
             [ Html.Attributes.style "display" "flex"
@@ -156,7 +143,7 @@ container pending ent tags =
               <|
                 List.map View.Components.tag tags
             ]
-        , newTag pending ent
+        , newTag ("new_tag_" ++ ent) pending ent
         ]
 
 
@@ -173,14 +160,19 @@ viewSugestions tagEnt =
 
 
 view : TagEnt -> MainArgs -> Html Msg
-view tagEnt { continuousSearch, query, pending } =
+view tagEnt { query, pending } =
     View.Components.body
-        [ search continuousSearch pending
+        [ search query
         , TagEnt.asTree tagEnt
             |> List.filter (\( ent, _ ) -> String.contains (Maybe.withDefault "" query) ent)
             |> List.map (\( ent, ts ) -> container pending ent ts)
             |> Html.div []
-        , newEntity pending
-        , View.Components.symbolButton "⤬" GoToGraph
+        , newEntity "new_entity" pending
+        , Html.div
+            [ Html.Attributes.style "display" "flex"
+            , Html.Attributes.style "align-items" "center"
+            , Html.Attributes.style "color" "#888"
+            ]
+            [ View.Components.symbolButton "⤬" GoToGraph, Html.text "Graph" ]
         , viewSugestions tagEnt
         ]

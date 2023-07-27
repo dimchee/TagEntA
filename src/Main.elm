@@ -22,7 +22,7 @@ type View
 
 defaultMainArgs : MainArgs
 defaultMainArgs =
-    { continuousSearch = True, query = Nothing, pending = PendingNothing }
+    { query = Nothing, pending = PendingNothing }
 
 
 mainArgs : View -> MainArgs
@@ -33,20 +33,6 @@ mainArgs view =
 
         _ ->
             defaultMainArgs
-
-
-withContinuousSearch : Bool -> MainArgs -> MainArgs
-withContinuousSearch cs args =
-    { args | continuousSearch = cs }
-
-
-onContinuousSearch : (a -> a) -> View -> a -> a
-onContinuousSearch f view =
-    if mainArgs view |> .continuousSearch then
-        f
-
-    else
-        identity
 
 
 withQuery : Query -> MainArgs -> MainArgs
@@ -183,17 +169,16 @@ update msg model =
             { model
                 | view =
                     mainArgs model.view
-                        |> onContinuousSearch (withQuery <| Just query) model.view
-                        |> withPending (PendingSearch query)
+                        |> withQuery (Just query)
                         |> Main
             }
                 |> noCmd
 
-        Search query ->
-            { model | view = mainArgs model.view |> withQuery (Just query) |> withPending PendingNothing |> Main } |> noCmd
+        Search _ ->
+            ( model, Task.attempt (\_ -> NoAction) <| Browser.Dom.blur "search" )
 
-        ContinuousSearch cs ->
-            { model | view = mainArgs model.view |> withContinuousSearch cs |> Main } |> noCmd
+        Focus id ->
+            ( model, Task.attempt (\_ -> NoAction) <| Browser.Dom.focus id )
 
         NoAction ->
             model |> noCmd
