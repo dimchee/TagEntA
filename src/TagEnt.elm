@@ -57,12 +57,12 @@ addEdge ( ent, tag ) rel =
 
 addEntity : Entity -> TagEnt -> TagEnt
 addEntity ent rel =
-    { rel | tags_ = Dict.insert ent Set.empty rel.tags_ }
+    { rel | tags_ = Dict.update ent (Maybe.withDefault Set.empty >> Just) rel.tags_ }
 
 
 addTag : Tag -> TagEnt -> TagEnt
 addTag tag rel =
-    { rel | ents_ = Dict.insert tag Set.empty rel.ents_ }
+    { rel | ents_ = Dict.update tag (Maybe.withDefault Set.empty >> Just) rel.ents_ }
 
 
 removeTag : Tag -> TagEnt -> TagEnt

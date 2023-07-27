@@ -22,8 +22,8 @@ onEnter msg =
     Html.Events.on "keydown" (Decode.andThen isEnter Html.Events.keyCode)
 
 
-add : String -> Msg -> (String -> Msg) -> Html.Html Msg
-add val submit onChange =
+add : String -> Id -> Msg -> (String -> Msg) -> Html.Html Msg
+add val sugestions submit onChange =
     Html.div
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "align-items" "center"
@@ -40,6 +40,7 @@ add val submit onChange =
             , Html.Attributes.style "color" "white"
             , Html.Attributes.style "outline" "none"
             , Html.Attributes.style "width" "10rem"
+            , Html.Attributes.list sugestions
             ]
             []
         ]
@@ -75,6 +76,9 @@ searchHelper cSearch query =
                 , Html.Attributes.style "font-size" View.Components.font_size
                 , Html.Attributes.style "color" "white"
                 , Html.Attributes.style "outline" "none"
+
+                -- , Html.Attributes.type_ "search"
+                -- , Html.Attributes.list "search_sugestions"
                 ]
                 []
             ]
@@ -108,23 +112,23 @@ newTag pending ent =
     case pending of
         PendingTag ent2 tag ->
             if ent == ent2 then
-                add tag (AddTag ent tag) (InputTag ent)
+                add tag "sugestions_tag" (AddTag ent tag) (InputTag ent)
 
             else
-                add "" NoAction (InputTag ent)
+                add "" "sugestions_tag" NoAction (InputTag ent)
 
         _ ->
-            add "" NoAction (InputTag ent)
+            add "" "sugestions_tag" NoAction (InputTag ent)
 
 
 newEntity : Pending -> Html Msg
 newEntity pending =
     case pending of
         PendingEntity ent ->
-            add ent (AddEntity ent) InputEntity
+            add ent "sugestions_entity" (AddEntity ent) InputEntity
 
         _ ->
-            add "" NoAction InputEntity
+            add "" "sugestions_entity" NoAction InputEntity
 
 
 container : Pending -> Entity -> List Tag -> Html Msg
@@ -155,6 +159,18 @@ container pending ent tags =
         ]
 
 
+viewSugestions : TagEnt -> Html Msg
+viewSugestions tagEnt =
+    Html.div []
+        [ TagEnt.entities tagEnt
+            |> List.map (\x -> Html.option [ Html.Attributes.value x ] [])
+            |> Html.datalist [ Html.Attributes.id "sugestions_entity" ]
+        , TagEnt.tags tagEnt
+            |> List.map (\x -> Html.option [ Html.Attributes.value x ] [])
+            |> Html.datalist [ Html.Attributes.id "sugestions_tag" ]
+        ]
+
+
 view : TagEnt -> MainArgs -> Html Msg
 view tagEnt { continuousSearch, query, pending } =
     View.Components.body
@@ -165,4 +181,5 @@ view tagEnt { continuousSearch, query, pending } =
             |> Html.div []
         , newEntity pending
         , View.Components.symbolButton "⤬" GoToGraph
+        , viewSugestions tagEnt
         ]
