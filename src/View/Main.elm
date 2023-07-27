@@ -22,7 +22,7 @@ onEnter msg =
     Html.Events.on "keydown" (Decode.andThen isEnter Html.Events.keyCode)
 
 
-add : String -> Id -> Msg -> (String -> Msg) -> Html.Html Msg
+add : String -> Maybe Id -> Msg -> (String -> Msg) -> Html.Html Msg
 add val sugestions submit onChange =
     Html.div
         [ Html.Attributes.style "display" "flex"
@@ -40,7 +40,7 @@ add val sugestions submit onChange =
             , Html.Attributes.style "color" "white"
             , Html.Attributes.style "outline" "none"
             , Html.Attributes.style "width" "10rem"
-            , Html.Attributes.list sugestions
+            , sugestions |> Maybe.withDefault "" |> Html.Attributes.list
             ]
             []
         ]
@@ -76,6 +76,7 @@ searchHelper cSearch query =
                 , Html.Attributes.style "font-size" View.Components.font_size
                 , Html.Attributes.style "color" "white"
                 , Html.Attributes.style "outline" "none"
+                , Html.Attributes.style "width" "100%"
 
                 -- , Html.Attributes.type_ "search"
                 -- , Html.Attributes.list "search_sugestions"
@@ -112,23 +113,23 @@ newTag pending ent =
     case pending of
         PendingTag ent2 tag ->
             if ent == ent2 then
-                add tag "sugestions_tag" (AddTag ent tag) (InputTag ent)
+                add tag (Just "sugestions_tag") (AddTag ent tag) (InputTag ent)
 
             else
-                add "" "sugestions_tag" NoAction (InputTag ent)
+                add "" (Just "sugestions_tag") NoAction (InputTag ent)
 
         _ ->
-            add "" "sugestions_tag" NoAction (InputTag ent)
+            add "" (Just "sugestions_tag") NoAction (InputTag ent)
 
 
 newEntity : Pending -> Html Msg
 newEntity pending =
     case pending of
         PendingEntity ent ->
-            add ent "sugestions_entity" (AddEntity ent) InputEntity
+            add ent Nothing (AddEntity ent) InputEntity
 
         _ ->
-            add "" "sugestions_entity" NoAction InputEntity
+            add "" Nothing NoAction InputEntity
 
 
 container : Pending -> Entity -> List Tag -> Html Msg
