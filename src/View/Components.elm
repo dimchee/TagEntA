@@ -28,30 +28,42 @@ symbolButton symb msg =
         [ Html.text symb ]
 
 
+entityToId : Entity -> String
+entityToId ent_ =
+    "entity_" ++ ent_
+
+
+tagToId : Tag -> String
+tagToId tag_ =
+    "tag_" ++ tag_
+
+
 tag : Tag -> Html Msg
-tag text =
+tag tag_ =
     Html.div
         [ Html.Attributes.style "display" "inline-block"
         , Html.Attributes.style "border-radius" "50%"
         , Html.Attributes.style "text-align" "center"
         , Html.Attributes.style "outline" "2px solid white"
         , Html.Attributes.style "margin" "10px"
-        , Html.Events.onClick <| SelectedTag text
+        , Html.Attributes.id <| tagToId tag_
+        , Html.Events.onClick <| SelectedTag tag_
         ]
-        [ marginated text ]
+        [ marginated tag_ ]
 
 
 entity : Entity -> Html Msg
-entity text =
+entity entity_ =
     Html.div
         [ Html.Attributes.style "display" "inline-block"
         , Html.Attributes.style "border-radius" "0.5em"
         , Html.Attributes.style "text-align" "center"
         , Html.Attributes.style "outline" "2px solid white"
         , Html.Attributes.style "margin" "10px"
-        , Html.Events.onClick <| SelectedEntity text
+        , Html.Attributes.id <| entityToId entity_
+        , Html.Events.onClick <| SelectedEntity entity_
         ]
-        [ marginated text ]
+        [ marginated entity_ ]
 
 
 body : List (Html msg) -> Html msg
