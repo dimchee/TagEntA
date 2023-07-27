@@ -14,15 +14,49 @@ import View.TagEnt
 
 
 type View
-    = Main Query View.Main.Pending
+    = Main MainArgs
     | Tag Tag
     | Entity Entity
     | Graph (Maybe (Dict Id LR))
 
 
-mainDefault : View
-mainDefault =
-    Main Nothing View.Main.PendingNothing
+defaultMainArgs : MainArgs
+defaultMainArgs =
+    { continuousSearch = True, query = Nothing, pending = PendingNothing }
+
+
+mainArgs : View -> MainArgs
+mainArgs view =
+    case view of
+        Main args ->
+            args
+
+        _ ->
+            defaultMainArgs
+
+
+withContinuousSearch : Bool -> MainArgs -> MainArgs
+withContinuousSearch cs args =
+    { args | continuousSearch = cs }
+
+
+onContinuousSearch : (a -> a) -> View -> a -> a
+onContinuousSearch f view =
+    if mainArgs view |> .continuousSearch then
+        f
+
+    else
+        identity
+
+
+withQuery : Query -> MainArgs -> MainArgs
+withQuery q args =
+    { args | query = q }
+
+
+withPending : Pending -> MainArgs -> MainArgs
+withPending p args =
+    { args | pending = p }
 
 
 type alias Model =
@@ -52,15 +86,15 @@ main =
         { init =
             \_ ->
                 { tagEnt = TagEnt.example
-                , view = mainDefault
+                , view = defaultMainArgs |> Main
                 }
                     -- |> update GoToGraph
                     |> noCmd
         , view =
             \{ tagEnt, view } ->
                 case view of
-                    Main query pending ->
-                        View.Main.view tagEnt query pending
+                    Main args ->
+                        View.Main.view tagEnt args
 
                     Tag tag ->
                         View.TagEnt.tag tag tagEnt
@@ -71,7 +105,14 @@ main =
                     Graph lrs ->
                         View.Graph.view tagEnt lrs
         , update = update
-        , subscriptions = \_ -> Browser.Events.onResize (\_ _ -> GetLRs)
+        , subscriptions =
+            \{ view } ->
+                case view of
+                    Graph _ ->
+                        Browser.Events.onResize (\_ _ -> GetLRs)
+
+                    _ ->
+                        Sub.none
         }
 
 
@@ -87,16 +128,6 @@ validate s =
 noCmd : a -> ( a, Cmd msg )
 noCmd x =
     ( x, Cmd.none )
-
-
-getMainQ : Model -> View.Main.Pending -> View
-getMainQ { view } =
-    case view of
-        Main q _ ->
-            Main q
-
-        _ ->
-            Main Nothing
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -123,19 +154,21 @@ update msg model =
             { model | view = Graph Nothing } |> update GetLRs
 
         GoToMain ->
-            { model | view = mainDefault } |> noCmd
+            { model | view = mainArgs model.view |> Main } |> noCmd
 
         InputTag ent s ->
-            { model | view = getMainQ model <| View.Main.PendingTag ent <| validate s } |> noCmd
+            { model | view = mainArgs model.view |> withPending (PendingTag ent <| validate s) |> Main } |> noCmd
 
         InputEntity s ->
-            { model | view = getMainQ model <| View.Main.PendingEntity <| validate s } |> noCmd
+            { model | view = mainArgs model.view |> withPending (PendingEntity <| validate s) |> Main } |> noCmd
 
         AddTag ent tag ->
-            { model | tagEnt = addEdge ( ent, tag ) model.tagEnt } |> update GoToMain
+            { model | tagEnt = addEdge ( ent, tag ) model.tagEnt, view = mainArgs model.view |> withPending PendingNothing |> Main }
+                |> noCmd
 
         AddEntity ent ->
-            { model | tagEnt = addEntity ent model.tagEnt } |> update GoToMain
+            { model | tagEnt = addEntity ent model.tagEnt, view = mainArgs model.view |> withPending PendingNothing |> Main }
+                |> noCmd
 
         DeleteTag tag ->
             { model | tagEnt = removeTag tag model.tagEnt } |> update GoToMain
@@ -147,10 +180,20 @@ update msg model =
             { model | view = Graph lrs } |> noCmd
 
         ChangeQuery query ->
-            { model | view = getMainQ model <| View.Main.PendingSearch query } |> noCmd
+            { model
+                | view =
+                    mainArgs model.view
+                        |> onContinuousSearch (withQuery <| Just query) model.view
+                        |> withPending (PendingSearch query)
+                        |> Main
+            }
+                |> noCmd
 
         Search query ->
-            { model | view = Main (Just query) View.Main.PendingNothing } |> noCmd
+            { model | view = mainArgs model.view |> withQuery (Just query) |> withPending PendingNothing |> Main } |> noCmd
+
+        ContinuousSearch cs ->
+            { model | view = mainArgs model.view |> withContinuousSearch cs |> Main } |> noCmd
 
         NoAction ->
             model |> noCmd

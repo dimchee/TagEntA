@@ -9,13 +9,6 @@ import Types exposing (..)
 import View.Components
 
 
-type Pending
-    = PendingTag Entity String
-    | PendingEntity String
-    | PendingSearch String
-    | PendingNothing
-
-
 onEnter : Msg -> Html.Attribute Msg
 onEnter msg =
     let
@@ -52,11 +45,13 @@ add val submit onChange =
         ]
 
 
-searchHelper : String -> Html Msg
-searchHelper query =
+searchHelper : Bool -> String -> Html Msg
+searchHelper cSearch query =
     Html.div
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "justify-content" "center"
+        , Html.Attributes.style "align-items" "center"
+        , Html.Attributes.style "color" "#888"
         ]
         [ Html.div
             [ Html.Attributes.style "display" "flex"
@@ -64,7 +59,6 @@ searchHelper query =
             , Html.Attributes.style "border-radius" "0.5em"
             , Html.Attributes.style "outline" "2px dashed white"
             , Html.Attributes.style "margin" "10px"
-            , Html.Attributes.style "color" "#888"
             ]
             [ Html.div
                 [ Html.Attributes.style "margin" "10px"
@@ -84,17 +78,29 @@ searchHelper query =
                 ]
                 []
             ]
+        , Html.input
+            [ Html.Attributes.type_ "checkbox"
+            , Html.Attributes.style "height" "20px"
+            , Html.Attributes.style "width" "20px"
+            , Html.Events.onCheck ContinuousSearch
+            , Html.Attributes.checked cSearch
+            ]
+            []
+        , Html.label
+            []
+            [ Html.text "Continuous Search"
+            ]
         ]
 
 
-search : Pending -> Html Msg
-search pending =
+search : Bool -> Pending -> Html Msg
+search cSearch pending =
     case pending of
         PendingSearch query ->
-            searchHelper query
+            searchHelper cSearch query
 
         _ ->
-            searchHelper ""
+            searchHelper cSearch ""
 
 
 newTag : Pending -> Entity -> Html Msg
@@ -149,10 +155,10 @@ container pending ent tags =
         ]
 
 
-view : TagEnt -> Query -> Pending -> Html Msg
-view tagEnt query pending =
+view : TagEnt -> MainArgs -> Html Msg
+view tagEnt { continuousSearch, query, pending } =
     View.Components.body
-        [ search pending
+        [ search continuousSearch pending
         , TagEnt.asTree tagEnt
             |> List.filter (\( ent, _ ) -> String.contains (Maybe.withDefault "" query) ent)
             |> List.map (\( ent, ts ) -> container pending ent ts)
