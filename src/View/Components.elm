@@ -1,8 +1,13 @@
 module View.Components exposing (..)
 
+import Css
+import Css.Global
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Html.Styled exposing (toUnstyled)
+import Html.Styled.Attributes
+import Html.Styled.Events
 import TagEnt exposing (Entity, Tag)
 import Types exposing (Msg(..))
 
@@ -40,16 +45,46 @@ tagToId tag_ =
 
 tag : Tag -> Html Msg
 tag tag_ =
-    Html.div
-        [ Html.Attributes.style "display" "inline-block"
-        , Html.Attributes.style "border-radius" "50%"
-        , Html.Attributes.style "text-align" "center"
-        , Html.Attributes.style "outline" "2px solid white"
-        , Html.Attributes.style "margin" "10px"
-        , Html.Attributes.id <| tagToId tag_
-        , Html.Events.onClick <| SelectedTag tag_
-        ]
-        [ marginated tag_ ]
+    toUnstyled <|
+        Html.Styled.div
+            [ Html.Styled.Attributes.css
+                [ Css.displayFlex
+                , Css.borderRadius <| Css.pct 50
+                , Css.textAlign Css.center
+                , Css.alignItems Css.center
+                , Css.outline3 (Css.px 2) Css.solid <| Css.hex "ffffff"
+                , Css.margin (Css.px 10)
+                , Css.hover
+                    [ Css.Global.children
+                        [ Css.Global.id "delete_tag_x"
+                            [ --Css.visibility Css.visible
+                              Css.display Css.block
+                            ]
+                        ]
+                    ]
+                ]
+            , Html.Styled.Attributes.id <| tagToId tag_
+            ]
+            [ Html.Styled.div
+                [ Html.Styled.Attributes.css
+                    [ Css.margin <| Css.px 10
+                    ]
+                , Html.Styled.Events.onClick <| SelectedTag tag_
+                ]
+                [ Html.Styled.text tag_ ]
+            , Html.Styled.div
+                [ Html.Styled.Attributes.css
+                    [ Css.margin4 (Css.px 10) (Css.px 10) (Css.px 10) (Css.px 0)
+
+                    -- , Css.visibility Css.hidden
+                    , Css.display Css.none
+                    ]
+                , Html.Styled.Attributes.id "delete_tag_x"
+                , Html.Styled.Events.onClick <| DeleteTag tag_
+                ]
+                [ Html.Styled.text "𝕏"
+                ]
+            ]
 
 
 entity : Entity -> Html Msg

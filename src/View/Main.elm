@@ -124,25 +124,20 @@ container pending ent tags =
         [ Html.Attributes.style "display" "flex"
         , Html.Attributes.style "min-width" "40rem"
         , Html.Attributes.style "align-items" "center"
-        , Html.Attributes.style "justify-content" "space-between"
+        , Html.Attributes.style "justify-content" "flex-start"
         , Html.Attributes.style "border-radius" "0.5em"
         , Html.Attributes.style "outline" "2px solid white"
         , Html.Attributes.style "margin" "10px"
         , Html.Events.onClick <| Focus <| "new_tag_" ++ ent
         ]
-        [ Html.div
+        [ View.Components.entity ent
+        , Html.div
             [ Html.Attributes.style "display" "flex"
-            , Html.Attributes.style "align-items" "flex-start"
+            , Html.Attributes.style "flex-wrap" "wrap"
+            , Html.Attributes.style "background" "linear-gradient(#F00, #F00) no-repeat left/2px 100%"
             ]
-            [ View.Components.entity ent
-            , Html.div
-                [ Html.Attributes.style "display" "flex"
-                , Html.Attributes.style "flex-wrap" "wrap"
-                , Html.Attributes.style "background" "linear-gradient(#F00, #F00) no-repeat left/2px 100%"
-                ]
-              <|
-                List.map View.Components.tag tags
-            ]
+          <|
+            List.map View.Components.tag tags
         , newTag ("new_tag_" ++ ent) pending ent
         ]
 
